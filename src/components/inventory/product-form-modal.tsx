@@ -362,7 +362,13 @@ export function ProductFormModal({ mode, product, onClose }: ProductFormModalPro
                           <option value="pack">Pack</option>
                           <option value="case">Case</option>
                           <option value="bag">Bag</option>
+                          <option value="carton">Carton</option>
+                          <option value="bottle">Bottle</option>
+                          <option value="gallon">Gallon</option>
                           <option value="can">Can</option>
+                          <option value="jar">Jar</option>
+                          <option value="pail">Pail</option>
+                          <option value="kg">Kilogram (kg)</option>
                         </select>
                       </div>
                     </div>
@@ -371,7 +377,7 @@ export function ProductFormModal({ mode, product, onClose }: ProductFormModalPro
                   {productType === 'raw_material' && (
                     <div>
                       <label htmlFor="package_unit_name" className="block text-label-md text-on-surface-variant mb-1.5">
-                        Package Label
+                        Bulk Container Unit
                       </label>
                       <select
                         id="package_unit_name"
@@ -384,7 +390,13 @@ export function ProductFormModal({ mode, product, onClose }: ProductFormModalPro
                         <option value="pack">Pack</option>
                         <option value="case">Case</option>
                         <option value="bag">Bag</option>
+                        <option value="carton">Carton</option>
+                        <option value="bottle">Bottle</option>
+                        <option value="gallon">Gallon</option>
                         <option value="can">Can</option>
+                        <option value="jar">Jar</option>
+                        <option value="pail">Pail</option>
+                        <option value="kg">Kilogram (kg)</option>
                       </select>
                     </div>
                   )}

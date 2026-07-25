@@ -147,13 +147,22 @@ export function RecipeBuilder({ menuProductId }: RecipeBuilderProps) {
             required
           />
 
-          <input
-            type="text"
-            placeholder="Unit (ml, g, pcs)"
+          <select
             value={unitName}
             onChange={(e) => setUnitName(e.target.value)}
-            className="h-9 px-2 bg-white border border-outline-variant rounded-md text-xs outline-none focus:border-primary"
-          />
+            className="h-9 px-2 bg-white border border-outline-variant rounded-md text-xs outline-none focus:border-primary font-semibold"
+          >
+            <option value="ml">ml (Milliliters)</option>
+            <option value="g">g (Grams)</option>
+            <option value="pcs">pcs (Pieces)</option>
+            <option value="oz">oz (Ounces)</option>
+            <option value="tbsp">tbsp (Tablespoon)</option>
+            <option value="tsp">tsp (Teaspoon)</option>
+            <option value="pumps">pumps (Syrup Pump)</option>
+            <option value="scoops">scoops (Powder Scoop)</option>
+            <option value="slices">slices</option>
+            <option value="shots">shots</option>
+          </select>
         </div>
 
         <button
