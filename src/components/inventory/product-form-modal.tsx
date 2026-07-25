@@ -43,6 +43,9 @@ export function ProductFormModal({ mode, product, onClose }: ProductFormModalPro
   const [unitCost, setUnitCost] = useState<string>(
     product?.unit_cost !== undefined && product?.unit_cost !== null ? String(product.unit_cost) : ''
   );
+  const [unitName, setUnitName] = useState<string>(
+    product?.unit_name || 'pcs'
+  );
 
   // Close on escape key or click outside
   useEffect(() => {
@@ -278,7 +281,8 @@ export function ProductFormModal({ mode, product, onClose }: ProductFormModalPro
                           <select
                             id="unit_name"
                             name="unit_name"
-                            defaultValue={product?.unit_name || 'pcs'}
+                            value={unitName}
+                            onChange={(e) => setUnitName(e.target.value)}
                             className={InputStyle}
                           >
                             <option value="pcs">Pieces (pcs)</option>
@@ -517,11 +521,12 @@ export function ProductFormModal({ mode, product, onClose }: ProductFormModalPro
             {productType === 'raw_material' && (
               <div className="grid grid-cols-3 gap-4 animate-in fade-in duration-200">
                 <div>
-                  <label htmlFor="current_stock" className="block text-label-md text-on-surface-variant mb-1.5">Current Stock (pcs)</label>
+                  <label htmlFor="current_stock" className="block text-label-md text-on-surface-variant mb-1.5">Current Stock ({unitName})</label>
                   <input 
                     id="current_stock" 
                     name="current_stock" 
                     type="number" 
+                    step="any"
                     min="0"
                     required={productType === 'raw_material'}
                     defaultValue={product?.current_stock ?? 0}
@@ -529,11 +534,12 @@ export function ProductFormModal({ mode, product, onClose }: ProductFormModalPro
                   />
                 </div>
                 <div>
-                  <label htmlFor="low_stock_threshold" className="block text-label-md text-on-surface-variant mb-1.5">Threshold (pcs)</label>
+                  <label htmlFor="low_stock_threshold" className="block text-label-md text-on-surface-variant mb-1.5">Threshold ({unitName})</label>
                   <input 
                     id="low_stock_threshold" 
                     name="low_stock_threshold" 
                     type="number" 
+                    step="any"
                     min="0"
                     required={productType === 'raw_material'}
                     defaultValue={product?.low_stock_threshold ?? 5}
@@ -541,11 +547,12 @@ export function ProductFormModal({ mode, product, onClose }: ProductFormModalPro
                   />
                 </div>
                 <div>
-                  <label htmlFor="target_stock" className="block text-label-md text-on-surface-variant mb-1.5">Target (pcs)</label>
+                  <label htmlFor="target_stock" className="block text-label-md text-on-surface-variant mb-1.5">Target ({unitName})</label>
                   <input 
                     id="target_stock" 
                     name="target_stock" 
                     type="number" 
+                    step="any"
                     min="0"
                     required={productType === 'raw_material'}
                     defaultValue={product?.target_stock ?? 20}

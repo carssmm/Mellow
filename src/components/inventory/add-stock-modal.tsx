@@ -44,11 +44,11 @@ export function AddStockModal({ product, onClose }: AddStockModalProps) {
     };
   }, [onClose]);
 
-  const numQty = parseInt(quantity, 10);
+  const numQty = parseFloat(quantity);
   const isValidQty = !isNaN(numQty) && numQty > 0;
 
   const addedPieces = isValidQty ? (addMode === 'package' ? numQty * itemsPerPkg : numQty) : 0;
-  const newStock = product.current_stock + addedPieces;
+  const newStock = Number((product.current_stock + addedPieces).toFixed(4));
 
   // New stock box breakdown calculation
   const newFullBoxes = itemsPerPkg > 1 ? Math.floor(newStock / itemsPerPkg) : 0;
@@ -130,11 +130,11 @@ export function AddStockModal({ product, onClose }: AddStockModalProps) {
           <div className="bg-surface-container p-3.5 rounded-lg flex justify-between items-center text-body-md">
             <span className="text-on-surface-variant">Current Stock:</span>
             <div className="text-right">
-              <span className="font-semibold text-on-surface">{product.current_stock} pcs</span>
+              <span className="font-semibold text-on-surface">{product.current_stock} {product.unit_name || 'pcs'}</span>
               {hasPackageSupport && (
                 <span className="text-label-md text-on-surface-variant block">
                   ({Math.floor(product.current_stock / itemsPerPkg)} {packageUnitName}s
-                  {product.current_stock % itemsPerPkg > 0 ? `, ${product.current_stock % itemsPerPkg} pcs` : ''})
+                  {product.current_stock % itemsPerPkg > 0 ? `, ${Number((product.current_stock % itemsPerPkg).toFixed(4))} ${product.unit_name || 'pcs'}` : ''})
                 </span>
               )}
             </div>
@@ -155,7 +155,7 @@ export function AddStockModal({ product, onClose }: AddStockModalProps) {
                   }`}
                 >
                   <span className="material-symbols-outlined text-[18px]">inventory_2</span>
-                  Add by {packageUnitName.charAt(0).toUpperCase() + packageUnitName.slice(1)} ({itemsPerPkg} pcs/{packageUnitName})
+                  Add by {packageUnitName.charAt(0).toUpperCase() + packageUnitName.slice(1)} ({itemsPerPkg} {product.unit_name || 'pcs'}/{packageUnitName})
                 </button>
                 <button
                   type="button"
@@ -166,7 +166,7 @@ export function AddStockModal({ product, onClose }: AddStockModalProps) {
                       : 'text-on-surface-variant hover:text-on-surface'
                   }`}
                 >
-                  Add by Pcs
+                  Add by {product.unit_name || 'pcs'}
                 </button>
               </div>
             </div>
@@ -175,12 +175,13 @@ export function AddStockModal({ product, onClose }: AddStockModalProps) {
           {/* Quantity Input */}
           <div>
             <label htmlFor="quantity" className="block text-label-md text-on-surface-variant mb-1.5">
-              Quantity to Add ({addMode === 'package' ? `${packageUnitName}s` : 'pcs'})
+              Quantity to Add ({addMode === 'package' ? `${packageUnitName}s` : (product.unit_name || 'pcs')})
             </label>
             <input
               id="quantity"
               type="number"
-              min="1"
+              min="0.0001"
+              step="any"
               required
               value={quantity}
               onChange={(e) => setQuantity(e.target.value)}
@@ -194,10 +195,10 @@ export function AddStockModal({ product, onClose }: AddStockModalProps) {
             <div className="bg-emerald-50 border border-emerald-200 text-emerald-900 p-3.5 rounded-lg text-body-sm space-y-1">
               <p className="font-semibold flex items-center gap-1.5">
                 <span className="material-symbols-outlined text-[18px] text-emerald-600">add_circle</span>
-                Will add +{addedPieces} pcs to current stock
+                Will add +{addedPieces} {product.unit_name || 'pcs'} to current stock
               </p>
               <p className="text-label-md text-emerald-800">
-                New Total: <strong>{newStock} pcs</strong> {hasPackageSupport ? `(${newBoxBreakdown})` : ''}
+                New Total: <strong>{newStock} {product.unit_name || 'pcs'}</strong> {hasPackageSupport ? `(${newBoxBreakdown})` : ''}
               </p>
             </div>
           )}

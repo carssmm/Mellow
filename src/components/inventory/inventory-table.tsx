@@ -233,28 +233,43 @@ export function InventoryTable({ products }: { products: Product[] }) {
 
                           {/* Visual Stock Level Progress Bar */}
                           {(() => {
+                            const capacity = product.piece_capacity || 1;
+                            const capUnit = product.piece_capacity_unit || 'ml';
+                            const isMeasured = capacity > 1;
                             const maxStock = product.target_stock || (product.low_stock_threshold * 2) || 10;
-                            const percentage = Math.min(100, Math.max(0, Math.round((product.current_stock / maxStock) * 100)));
+
+                            let percentage = 0;
+                            let measuredSubtext = '';
+
+                            if (isMeasured) {
+                              if (product.current_stock <= 0) {
+                                percentage = 0;
+                                measuredSubtext = `Empty`;
+                              } else {
+                                const wholePieces = Math.floor(product.current_stock);
+                                const decimalPart = product.current_stock - wholePieces;
+                                const remainingPortion = Math.round(decimalPart * capacity);
+                                const activeFillPercentage = decimalPart > 0 ? Math.round(decimalPart * 100) : 100;
+                                
+                                // The progress bar represents the currently active/opened bottle's fill level!
+                                percentage = activeFillPercentage;
+
+                                if (wholePieces === 0) {
+                                  measuredSubtext = `${remainingPortion}${capUnit} left (${activeFillPercentage}% full)`;
+                                } else if (remainingPortion > 0) {
+                                  measuredSubtext = `${wholePieces} full + ${remainingPortion}${capUnit} (${activeFillPercentage}% full)`;
+                                } else {
+                                  measuredSubtext = `${wholePieces} full ${product.unit_name || 'pcs'}`;
+                                }
+                              }
+                            } else {
+                              percentage = Math.min(100, Math.max(0, Math.round((product.current_stock / maxStock) * 100)));
+                            }
+
                             const barColor = 
                               status === 'out_of_stock' ? 'bg-error' :
                               status === 'low_stock' ? 'bg-amber-500' :
                               'bg-emerald-500';
-
-                            // Extra visual text for liquid/capacity items (e.g. 4.98 bottles -> 4 bottles + 980ml)
-                            const capacity = product.piece_capacity || 1;
-                            const capUnit = product.piece_capacity_unit || 'ml';
-                            const isMeasured = capacity > 1;
-
-                            let measuredSubtext = '';
-                            if (isMeasured && product.current_stock > 0) {
-                              const wholePieces = Math.floor(product.current_stock);
-                              const remainingPortion = Math.round((product.current_stock - wholePieces) * capacity);
-                              if (remainingPortion > 0) {
-                                measuredSubtext = `${wholePieces} ${product.unit_name || 'pcs'} + ${remainingPortion}${capUnit}`;
-                              } else {
-                                measuredSubtext = `${wholePieces} full ${product.unit_name || 'pcs'}`;
-                              }
-                            }
 
                             return (
                               <div className="w-28 space-y-1">
@@ -264,7 +279,7 @@ export function InventoryTable({ products }: { products: Product[] }) {
                                     style={{ width: `${percentage}%` }}
                                   />
                                 </div>
-                                {measuredSubtext ? (
+                                {isMeasured ? (
                                   <div className="text-[10px] text-primary font-semibold tracking-tight whitespace-nowrap">
                                     {measuredSubtext}
                                   </div>

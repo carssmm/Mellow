@@ -5,9 +5,9 @@ export const createProductSchema = z.object({
   category: z.string().min(1, "Category is required").max(50).default('Uncategorized'),
   selling_price: z.coerce.number().min(0, "Selling price cannot be negative").max(999999.99).default(0),
   unit_cost: z.coerce.number().min(0, "Unit cost cannot be negative").max(999999.99),
-  current_stock: z.coerce.number().int().min(0, "Stock cannot be negative").default(0),
-  low_stock_threshold: z.coerce.number().int().min(0, "Threshold cannot be negative").default(5),
-  target_stock: z.coerce.number().int().min(0, "Target cannot be negative").default(20),
+  current_stock: z.coerce.number().min(0, "Stock cannot be negative").default(0),
+  low_stock_threshold: z.coerce.number().min(0, "Threshold cannot be negative").default(5),
+  target_stock: z.coerce.number().min(0, "Target cannot be negative").default(20),
   is_active: z.boolean().default(true),
   type: z.enum(['menu_item', 'raw_material']).default('menu_item'),
   package_price: z.preprocess(
@@ -31,7 +31,7 @@ export const deleteProductSchema = z.object({
 
 export const addStockSchema = z.object({
   product_id: z.string().uuid("Invalid product ID"),
-  quantity: z.coerce.number().int().min(1, "Quantity must be at least 1"),
+  quantity: z.coerce.number().min(0.0001, "Quantity must be greater than 0"),
   is_package: z.boolean().default(false),
   update_package_price: z.boolean().default(false),
   new_package_price: z.preprocess(
