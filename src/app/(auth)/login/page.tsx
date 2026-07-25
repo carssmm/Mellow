@@ -26,7 +26,11 @@ export default function LoginPage() {
       });
 
       if (error) {
-        setError(error.message);
+        if (error.message.includes('Failed to fetch') || error.message.includes('fetch failed')) {
+          setError('Connection failed: Please ensure NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are set in your Vercel Project Settings and trigger a Redeploy.');
+        } else {
+          setError(error.message);
+        }
         setIsLoading(false);
         return;
       }
@@ -34,10 +38,16 @@ export default function LoginPage() {
       router.push('/dashboard');
       router.refresh();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
+      const msg = err instanceof Error ? err.message : 'An unexpected error occurred';
+      if (msg.includes('Failed to fetch') || msg.includes('fetch failed')) {
+        setError('Connection failed: Please ensure NEXT_PUBLIC_SUPABASE_URL is set in Vercel Project Settings and trigger a Redeploy.');
+      } else {
+        setError(msg);
+      }
       setIsLoading(false);
     }
   };
+
 
   return (
     <div className="w-full max-w-[480px] relative">
