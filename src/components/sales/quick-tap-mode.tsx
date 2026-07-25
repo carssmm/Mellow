@@ -6,12 +6,17 @@ import { formatCurrency, cn } from '@/lib/utils';
 import { recordQuickTapSale } from '@/app/(dashboard)/sales/actions';
 import { useToast } from '@/components/ui/toast';
 
+import { AddonSelectorModal } from './addon-selector-modal';
+import { ProductAddon } from '@/types';
+
 interface CartItem {
+  cartId: string;
   productId: string;
   productName: string;
   quantity: number;
   unitPrice: number;
   unitCost: number;
+  selectedAddons?: ProductAddon[];
 }
 
 export function QuickTapMode({ products }: { products: Product[] }) {
@@ -21,6 +26,7 @@ export function QuickTapMode({ products }: { products: Product[] }) {
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'gcash_maya'>('cash');
   const [customerNotes, setCustomerNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [activeProductForAddons, setActiveProductForAddons] = useState<Product | null>(null);
 
   // Extract unique categories
   const categories = ['All', ...Array.from(new Set(products.map(p => p.category)))].sort();
@@ -30,30 +36,45 @@ export function QuickTapMode({ products }: { products: Product[] }) {
     ? products 
     : products.filter(p => p.category === activeCategory);
 
-  // Cart operations
-  const addToCart = (product: Product) => {
+  const handleProductTap = (product: Product) => {
+    // Open modal to choose add-ons
+    setActiveProductForAddons(product);
+  };
+
+  const handleConfirmAddToCart = (product: Product, selectedAddons: ProductAddon[]) => {
+    setActiveProductForAddons(null);
+
+    const extraPrice = selectedAddons.reduce((sum, a) => sum + Number(a.price), 0);
+    const finalUnitPrice = product.selling_price + extraPrice;
+
+    const addonText = selectedAddons.map(a => a.name).join(', ');
+    const displayName = addonText ? `${product.name} (+ ${addonText})` : product.name;
+    const cartId = `${product.id}-${selectedAddons.map(a => a.id).sort().join('-')}`;
+
     setCart(prev => {
-      const existing = prev.find(item => item.productId === product.id);
+      const existing = prev.find(item => item.cartId === cartId);
       if (existing) {
         return prev.map(item => 
-          item.productId === product.id 
+          item.cartId === cartId 
             ? { ...item, quantity: item.quantity + 1 } 
             : item
         );
       }
       return [...prev, {
+        cartId,
         productId: product.id,
-        productName: product.name,
+        productName: displayName,
         quantity: 1,
-        unitPrice: product.selling_price,
+        unitPrice: finalUnitPrice,
         unitCost: product.unit_cost,
+        selectedAddons,
       }];
     });
   };
 
-  const updateQuantity = (productId: string, delta: number) => {
+  const updateQuantity = (cartId: string, delta: number) => {
     setCart(prev => prev.map(item => {
-      if (item.productId === productId) {
+      if (item.cartId === cartId) {
         const newQty = item.quantity + delta;
         return newQty > 0 ? { ...item, quantity: newQty } : item;
       }
@@ -61,8 +82,8 @@ export function QuickTapMode({ products }: { products: Product[] }) {
     }));
   };
 
-  const removeItem = (productId: string) => {
-    setCart(prev => prev.filter(item => item.productId !== productId));
+  const removeItem = (cartId: string) => {
+    setCart(prev => prev.filter(item => item.cartId !== cartId));
   };
 
   const cartTotal = cart.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
@@ -127,7 +148,7 @@ export function QuickTapMode({ products }: { products: Product[] }) {
             return (
               <div
                 key={product.id}
-                onClick={() => addToCart(product)}
+                onClick={() => handleProductTap(product)}
                 className="bg-surface rounded-xl border border-outline-variant p-4 shadow-soft h-48 flex flex-col justify-between group transition-transform select-none cursor-pointer hover:-translate-y-0.5 active:translate-y-0"
               >
                 {/* Category Badge */}
@@ -176,7 +197,7 @@ export function QuickTapMode({ products }: { products: Product[] }) {
             ) : (
               <div className="space-y-4">
                 {cart.map(item => (
-                  <div key={item.productId} className="flex flex-col gap-2 pb-4 border-b border-outline-variant/50 last:border-0">
+                  <div key={item.cartId} className="flex flex-col gap-2 pb-4 border-b border-outline-variant/50 last:border-0">
                     <div className="flex items-start justify-between">
                       <div className="font-semibold text-on-surface pr-2">{item.productName}</div>
                       <div className="font-number-data text-on-surface whitespace-nowrap">
@@ -186,21 +207,21 @@ export function QuickTapMode({ products }: { products: Product[] }) {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3 bg-surface-container-lowest border border-outline-variant rounded-lg p-1">
                         <button 
-                          onClick={() => updateQuantity(item.productId, -1)}
+                          onClick={() => updateQuantity(item.cartId, -1)}
                           className="w-7 h-7 flex items-center justify-center text-on-surface-variant hover:bg-surface-container rounded-md"
                         >
                           <span className="material-symbols-outlined text-[18px]">remove</span>
                         </button>
                         <span className="font-number-data text-sm w-4 text-center">{item.quantity}</span>
                         <button 
-                          onClick={() => updateQuantity(item.productId, 1)}
+                          onClick={() => updateQuantity(item.cartId, 1)}
                           className="w-7 h-7 flex items-center justify-center text-on-surface-variant hover:bg-surface-container rounded-md"
                         >
                           <span className="material-symbols-outlined text-[18px]">add</span>
                         </button>
                       </div>
                       <button 
-                        onClick={() => removeItem(item.productId)}
+                        onClick={() => removeItem(item.cartId)}
                         className="text-on-surface-variant/70 hover:text-error transition-colors p-1"
                       >
                         <span className="material-symbols-outlined text-[18px]">delete</span>
@@ -276,6 +297,14 @@ export function QuickTapMode({ products }: { products: Product[] }) {
           </div>
         </div>
       </div>
+
+      {activeProductForAddons && (
+        <AddonSelectorModal
+          product={activeProductForAddons}
+          onClose={() => setActiveProductForAddons(null)}
+          onConfirm={handleConfirmAddToCart}
+        />
+      )}
     </div>
   );
 }

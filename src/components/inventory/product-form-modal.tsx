@@ -5,6 +5,7 @@ import { Product } from '@/types';
 import { createProduct, updateProduct } from '@/app/(dashboard)/inventory/actions';
 import { formatCurrency } from '@/lib/utils';
 import { RecipeBuilder } from './recipe-builder';
+import { AddonManager } from './addon-manager';
 
 interface ProductFormModalProps {
   mode: 'create' | 'edit';
@@ -470,7 +471,10 @@ export function ProductFormModal({ mode, product, onClose }: ProductFormModalPro
             )}
 
             {productType === 'menu_item' && mode === 'edit' && product?.id && (
-              <RecipeBuilder menuProductId={product.id} />
+              <>
+                <RecipeBuilder menuProductId={product.id} />
+                <AddonManager productId={product.id} />
+              </>
             )}
           </div>
 

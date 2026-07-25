@@ -66,6 +66,18 @@ export interface Recipe {
   raw_product?: Product;
 }
 
+export interface ProductAddon {
+  id: string;
+  user_id: string;
+  product_id?: string | null; // NULL for global add-on
+  name: string;
+  price: number;
+  raw_product_id?: string | null;
+  raw_quantity?: number;
+  created_at: string;
+  raw_product?: Product;
+}
+
 export interface UserSettings {
   user_id: string;
   daily_target_sales: number;
@@ -128,6 +140,11 @@ export interface Database {
         Row: Recipe;
         Insert: Omit<Recipe, 'id' | 'created_at' | 'updated_at'>;
         Update: Partial<Omit<Recipe, 'id' | 'user_id'>>;
+      };
+      product_addons: {
+        Row: ProductAddon;
+        Insert: Omit<ProductAddon, 'id' | 'created_at'>;
+        Update: Partial<Omit<ProductAddon, 'id' | 'user_id'>>;
       };
       user_settings: {
         Row: UserSettings;

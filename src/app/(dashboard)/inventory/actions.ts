@@ -352,4 +352,78 @@ export async function deleteRecipeItem(recipeId: string): Promise<{ success: boo
   }
 }
 
+export async function getProductAddons(productId?: string) {
+  try {
+    const user = await getAuthenticatedUser();
+    if (!user) return { data: null, error: 'Unauthorized' };
+
+    const supabase = await createSupabaseServerClient();
+    let query = supabase.from('product_addons').select('*').eq('user_id', user.id);
+    
+    if (productId) {
+      // Get global addons or product-specific addons
+      query = query.or(`product_id.eq.${productId},product_id.is.null`);
+    }
+
+    const { data, error } = await query.order('name', { ascending: true });
+
+    if (error) throw new Error(error.message);
+    return { data, error: null };
+  } catch (err: unknown) {
+    return { data: null, error: err instanceof Error ? err.message : 'Failed to fetch add-ons' };
+  }
+}
+
+export async function createProductAddon(
+  name: string,
+  price: number,
+  productId?: string | null,
+  rawProductId?: string | null,
+  rawQuantity?: number
+): Promise<{ success: boolean; error: string | null }> {
+  try {
+    const user = await getAuthenticatedUser();
+    if (!user) return { success: false, error: 'Unauthorized' };
+
+    const supabase = await createSupabaseServerClient();
+    const { error } = await supabase.from('product_addons').insert({
+      user_id: user.id,
+      product_id: productId || null,
+      name,
+      price,
+      raw_product_id: rawProductId || null,
+      raw_quantity: rawQuantity || 1,
+    });
+
+    if (error) throw new Error(error.message);
+    revalidatePath('/inventory');
+    revalidatePath('/sales');
+    return { success: true, error: null };
+  } catch (err: unknown) {
+    return { success: false, error: err instanceof Error ? err.message : 'Failed to create add-on' };
+  }
+}
+
+export async function deleteProductAddon(addonId: string): Promise<{ success: boolean; error: string | null }> {
+  try {
+    const user = await getAuthenticatedUser();
+    if (!user) return { success: false, error: 'Unauthorized' };
+
+    const supabase = await createSupabaseServerClient();
+    const { error } = await supabase
+      .from('product_addons')
+      .delete()
+      .eq('id', addonId)
+      .eq('user_id', user.id);
+
+    if (error) throw new Error(error.message);
+    revalidatePath('/inventory');
+    revalidatePath('/sales');
+    return { success: true, error: null };
+  } catch (err: unknown) {
+    return { success: false, error: err instanceof Error ? err.message : 'Failed to delete add-on' };
+  }
+}
+
+
 
