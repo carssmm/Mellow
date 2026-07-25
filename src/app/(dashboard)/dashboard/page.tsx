@@ -5,6 +5,7 @@ import { getLowStockProducts } from '@/app/(dashboard)/inventory/actions';
 import { getRecentSales, getBreakevenGoal } from '@/app/(dashboard)/actions';
 import { formatCurrency, getGreeting } from '@/lib/utils';
 import { Product } from '@/types';
+import { BreakevenCard } from '@/components/dashboard/breakeven-card';
 
 export const revalidate = 0; // Dynamic server component
 
@@ -210,46 +211,7 @@ export default async function DashboardPage() {
         <div className="space-y-6">
           
           {/* Daily Breakeven Goal Card */}
-          <div className="bg-surface-container border border-outline-variant rounded-xl p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-headline-md font-headline-md">Daily Breakeven Goal</h3>
-              <span className="text-label-md font-label-md text-on-surface-variant">
-                Target: {formatCurrency(breakeven.dailyTarget)}
-              </span>
-            </div>
-
-            <div className="space-y-3">
-              <div className="flex justify-between items-center text-body-sm">
-                <span className="text-on-surface-variant">Today's Revenue</span>
-                <span className="font-bold text-on-surface">{formatCurrency(breakeven.todayRevenue)}</span>
-              </div>
-
-              {/* Progress bar */}
-              <div className="w-full bg-surface-variant rounded-full h-3 overflow-hidden">
-                <div
-                  className={`h-full rounded-full transition-all duration-500 ${
-                    breakeven.isExceeded ? 'bg-emerald-600' : 'bg-[#D4A359]'
-                  }`}
-                  style={{ width: `${breakeven.percentage}%` }}
-                />
-              </div>
-
-              {/* Goal status text */}
-              <div className="pt-2">
-                {breakeven.isExceeded ? (
-                  <p className="text-body-sm font-medium text-emerald-600 flex items-center gap-1.5">
-                    <span className="material-symbols-outlined text-[18px]">check_circle</span>
-                    Goal exceeded by {formatCurrency(breakeven.difference)}! 🎉
-                  </p>
-                ) : (
-                  <p className="text-body-sm font-medium text-amber-700 flex items-center gap-1.5">
-                    <span className="material-symbols-outlined text-[18px]">schedule</span>
-                    {formatCurrency(breakeven.difference)} remaining to break even
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
+          <BreakevenCard breakeven={breakeven} />
 
           {/* Top Low Stock Items Sidebar */}
           <div className="bg-surface-container border border-outline-variant rounded-xl p-6">

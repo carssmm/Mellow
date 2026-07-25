@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Product } from '@/types';
 import { createProduct, updateProduct } from '@/app/(dashboard)/inventory/actions';
 import { formatCurrency } from '@/lib/utils';
+import { RecipeBuilder } from './recipe-builder';
 
 interface ProductFormModalProps {
   mode: 'create' | 'edit';
@@ -466,6 +467,10 @@ export function ProductFormModal({ mode, product, onClose }: ProductFormModalPro
                   />
                 </div>
               </div>
+            )}
+
+            {productType === 'menu_item' && mode === 'edit' && product?.id && (
+              <RecipeBuilder menuProductId={product.id} />
             )}
           </div>
 

@@ -1,7 +1,7 @@
 'use server';
 
 import { createSupabaseServerClient, getAuthenticatedUser } from '@/lib/supabase/server';
-import { getTodaysSummary } from '@/app/(dashboard)/sales/actions';
+import { getTodaysSummary, getUserTargetSales } from '@/app/(dashboard)/sales/actions';
 
 export interface RecentSaleItem {
   id: string;
@@ -68,8 +68,8 @@ export async function getBreakevenGoal(): Promise<{ data: BreakevenGoal | null; 
       return { data: null, error: summaryRes.error || 'Failed to fetch summary' };
     }
 
-    // Default daily target for MVP (₱3,000)
-    const dailyTarget = 3000;
+    const targetRes = await getUserTargetSales();
+    const dailyTarget = targetRes.targetSales || 5000;
     const todayRevenue = summaryRes.data.totalRevenue;
     const percentage = Math.min(100, Math.round((todayRevenue / dailyTarget) * 100));
     const isExceeded = todayRevenue >= dailyTarget;

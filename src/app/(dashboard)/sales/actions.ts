@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { createSupabaseServerClient, getAuthenticatedUser } from '@/lib/supabase/server';
 import { quickTapSaleSchema, batchSaleSchema, reconciliationSchema } from '@/lib/validations';
 import { Sale, SaleItem, DailySummary, Product } from '@/types';
+import { getPHStartOfDayISO } from '@/lib/date-utils';
 
 // Utility for decrementing stock in Supabase atomically or gracefully
 async function decrementStock(
@@ -13,38 +14,191 @@ async function decrementStock(
 ): Promise<string[]> {
   const warnings: string[] = [];
   
-  // Fetch current stock to warn if it drops below zero
   const productIds = items.map(i => i.productId);
-  const { data: products, error } = await supabase
+  const { data: products } = await supabase
     .from('products')
     .select('id, name, current_stock, type')
     .in('id', productIds)
     .eq('user_id', userId);
     
-  if (error || !products) return warnings;
+  if (!products) return warnings;
 
-  // Process decrements
   for (const item of items) {
     const product = products.find((p: Product) => p.id === item.productId);
-    if (!product || product.type === 'menu_item') continue;
-    
-    const newStock = product.current_stock - item.quantity;
-    
-    // Allow negative stock but generate a warning
-    if (newStock < 0) {
-      warnings.push(`Stock for "${product.name}" is now negative (${newStock}).`);
-    }
+    if (!product) continue;
 
-    // Direct update query
-    await supabase
-      .from('products')
-      .update({ current_stock: newStock })
-      .eq('id', item.productId)
-      .eq('user_id', userId);
+    if (product.type === 'raw_material') {
+      const newStock = product.current_stock - item.quantity;
+      if (newStock < 0) {
+        warnings.push(`Stock for "${product.name}" is now negative (${newStock}).`);
+      }
+      await supabase
+        .from('products')
+        .update({ current_stock: newStock })
+        .eq('id', item.productId)
+        .eq('user_id', userId);
+    } else if (product.type === 'menu_item') {
+      // Look up recipe ingredients linked to this menu item
+      const { data: recipes } = await supabase
+        .from('recipes')
+        .select('raw_product_id, quantity_required')
+        .eq('menu_product_id', item.productId)
+        .eq('user_id', userId);
+
+      if (recipes && recipes.length > 0) {
+        for (const recipe of recipes) {
+          const totalIngredientQty = Number(recipe.quantity_required) * item.quantity;
+          
+          const { data: rawProduct } = await supabase
+            .from('products')
+            .select('id, name, current_stock')
+            .eq('id', recipe.raw_product_id)
+            .eq('user_id', userId)
+            .single();
+
+          if (rawProduct) {
+            const updatedStock = (rawProduct.current_stock || 0) - totalIngredientQty;
+            if (updatedStock < 0) {
+              warnings.push(`Ingredient "${rawProduct.name}" stock is now negative (${updatedStock}).`);
+            }
+            await supabase
+              .from('products')
+              .update({ current_stock: updatedStock })
+              .eq('id', rawProduct.id)
+              .eq('user_id', userId);
+          }
+        }
+      }
+    }
   }
   
   return warnings;
 }
+
+export async function voidSale(saleId: string, voidReason: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    const user = await getAuthenticatedUser();
+    if (!user) return { success: false, error: 'Unauthorized' };
+
+    const supabase = await createSupabaseServerClient();
+
+    // Fetch sale details and items
+    const { data: sale, error: fetchError } = await supabase
+      .from('sales')
+      .select('*, items:sales_items(*)')
+      .eq('id', saleId)
+      .eq('user_id', user.id)
+      .single();
+
+    if (fetchError || !sale) return { success: false, error: 'Sale transaction not found' };
+    if (sale.is_voided) return { success: false, error: 'Sale is already voided' };
+
+    // Reverse inventory stock
+    for (const item of (sale.items || [])) {
+      const { data: product } = await supabase
+        .from('products')
+        .select('id, type, current_stock')
+        .eq('id', item.product_id)
+        .eq('user_id', user.id)
+        .single();
+
+      if (product) {
+        if (product.type === 'raw_material') {
+          await supabase
+            .from('products')
+            .update({ current_stock: (product.current_stock || 0) + item.quantity })
+            .eq('id', product.id)
+            .eq('user_id', user.id);
+        } else if (product.type === 'menu_item') {
+          // Restore linked recipe raw materials
+          const { data: recipes } = await supabase
+            .from('recipes')
+            .select('raw_product_id, quantity_required')
+            .eq('menu_product_id', product.id)
+            .eq('user_id', user.id);
+
+          if (recipes) {
+            for (const recipe of recipes) {
+              const restoredQty = Number(recipe.quantity_required) * item.quantity;
+              const { data: rawProduct } = await supabase
+                .from('products')
+                .select('id, current_stock')
+                .eq('id', recipe.raw_product_id)
+                .single();
+
+              if (rawProduct) {
+                await supabase
+                  .from('products')
+                  .update({ current_stock: (rawProduct.current_stock || 0) + restoredQty })
+                  .eq('id', rawProduct.id);
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Mark sale as voided
+    const { error: voidError } = await supabase
+      .from('sales')
+      .update({
+        is_voided: true,
+        void_reason: voidReason || 'Cancelled / Mistake',
+      })
+      .eq('id', saleId)
+      .eq('user_id', user.id);
+
+    if (voidError) throw new Error(voidError.message);
+
+    revalidatePath('/sales');
+    revalidatePath('/inventory');
+    revalidatePath('/dashboard');
+
+    return { success: true };
+  } catch (err: unknown) {
+    return { success: false, error: err instanceof Error ? err.message : 'Failed to void sale' };
+  }
+}
+
+export async function getUserTargetSales(): Promise<{ targetSales: number; error?: string }> {
+  try {
+    const user = await getAuthenticatedUser();
+    if (!user) return { targetSales: 5000 };
+
+    const supabase = await createSupabaseServerClient();
+    const { data } = await supabase
+      .from('user_settings')
+      .select('daily_target_sales')
+      .eq('user_id', user.id)
+      .single();
+
+    return { targetSales: data?.daily_target_sales ? Number(data.daily_target_sales) : 5000 };
+  } catch {
+    return { targetSales: 5000 };
+  }
+}
+
+export async function updateUserTargetSales(targetSales: number): Promise<{ success: boolean; error?: string }> {
+  try {
+    const user = await getAuthenticatedUser();
+    if (!user) return { success: false, error: 'Unauthorized' };
+
+    const supabase = await createSupabaseServerClient();
+    const { error } = await supabase
+      .from('user_settings')
+      .upsert({
+        user_id: user.id,
+        daily_target_sales: targetSales,
+      }, { onConflict: 'user_id' });
+
+    if (error) throw new Error(error.message);
+    revalidatePath('/dashboard');
+    return { success: true };
+  } catch (err: unknown) {
+    return { success: false, error: err instanceof Error ? err.message : 'Failed to update target' };
+  }
+}
+
 
 export async function recordQuickTapSale(data: unknown): Promise<{ success: boolean; saleId?: string; warnings?: string[]; error?: string }> {
   try {
@@ -169,15 +323,14 @@ export async function recordReconciliation(data: unknown): Promise<{ success: bo
     // Get today's cash sales
     // We filter by date in JS to ensure timezone consistency if needed, or query directly
     // Using current date on DB ensures UTC date matching if user is same timezone
-    const startOfDay = new Date();
-    startOfDay.setHours(0, 0, 0, 0);
-    
+    const startOfDayISO = getPHStartOfDayISO();
+
     const { data: todaySales, error: fetchError } = await supabase
       .from('sales')
       .select('total_revenue')
       .eq('user_id', user.id)
       .eq('payment_method', 'cash')
-      .gte('created_at', startOfDay.toISOString());
+      .gte('created_at', startOfDayISO);
 
     if (fetchError) throw new Error(fetchError.message);
 
@@ -217,15 +370,14 @@ export async function recordReconciliation(data: unknown): Promise<{ success: bo
   }
 }
 
-// Fetch sales for "Today" (UTC+8 or DB equivalent)
+// Fetch sales for "Today" (Philippines Timezone Asia/Manila UTC+8)
 export async function getTodaySales(): Promise<{ data: (Sale & { items: (SaleItem & { product: Product })[] })[] | null; error: string | null }> {
   try {
     const user = await getAuthenticatedUser();
     if (!user) return { data: null, error: 'Unauthorized' };
 
     const supabase = await createSupabaseServerClient();
-    const startOfDay = new Date();
-    startOfDay.setHours(0, 0, 0, 0);
+    const startOfDayISO = getPHStartOfDayISO();
 
     const { data, error } = await supabase
       .from('sales')
@@ -237,7 +389,7 @@ export async function getTodaySales(): Promise<{ data: (Sale & { items: (SaleIte
         )
       `)
       .eq('user_id', user.id)
-      .gte('created_at', startOfDay.toISOString())
+      .gte('created_at', startOfDayISO)
       .order('created_at', { ascending: false });
 
     if (error) throw new Error(error.message);
@@ -253,8 +405,7 @@ export async function getTodaysSummary(): Promise<{ data: DailySummary | null; e
     if (!user) return { data: null, error: 'Unauthorized' };
 
     const supabase = await createSupabaseServerClient();
-    const startOfDay = new Date();
-    startOfDay.setHours(0, 0, 0, 0);
+    const startOfDayISO = getPHStartOfDayISO();
 
     const { data: sales, error } = await supabase
       .from('sales')
@@ -263,7 +414,7 @@ export async function getTodaysSummary(): Promise<{ data: DailySummary | null; e
         items:sales_items ( quantity )
       `)
       .eq('user_id', user.id)
-      .gte('created_at', startOfDay.toISOString());
+      .gte('created_at', startOfDayISO);
 
     if (error) throw new Error(error.message);
 

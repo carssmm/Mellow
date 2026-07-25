@@ -6,6 +6,7 @@ import { SegmentedControl } from '@/components/ui/segmented-control';
 import { QuickTapMode } from './quick-tap-mode';
 import { BatchEntryMode } from './batch-entry-mode';
 import { CashReconciliationMode } from './cash-reconciliation-mode';
+import { SalesHistoryList } from './sales-history-list';
 
 export type SalesMode = 'quick_tap' | 'batch' | 'reconciliation';
 
@@ -38,6 +39,10 @@ export function SalesLogger({ products }: { products: Product[] }) {
         {activeMode === 'quick_tap' && <QuickTapMode products={products} />}
         {activeMode === 'batch' && <BatchEntryMode products={products} />}
         {activeMode === 'reconciliation' && <CashReconciliationMode />}
+      </div>
+
+      <div className="mt-8">
+        <SalesHistoryList />
       </div>
     </div>
   );

@@ -210,7 +210,7 @@ export async function getLowStockProducts(): Promise<{ data: Product[] | null; e
     if (error) throw new Error(error.message);
 
     const lowStockData = (data as Product[])
-      .filter(p => p.current_stock <= p.low_stock_threshold)
+      .filter(p => (p.type === 'raw_material' || !p.type) && p.current_stock <= p.low_stock_threshold)
       .sort((a, b) => a.current_stock - b.current_stock);
       
     return { data: lowStockData, error: null };
@@ -283,4 +283,73 @@ export async function addStock(
     return { success: false, error: err instanceof Error ? err.message : 'Failed to add stock' };
   }
 }
+
+export async function getRecipeForMenuProduct(menuProductId: string) {
+  try {
+    const user = await getAuthenticatedUser();
+    if (!user) return { data: null, error: 'Unauthorized' };
+
+    const supabase = await createSupabaseServerClient();
+    const { data, error } = await supabase
+      .from('recipes')
+      .select('*, raw_product:products!recipes_raw_product_id_fkey(*)')
+      .eq('menu_product_id', menuProductId)
+      .eq('user_id', user.id);
+
+    if (error) throw new Error(error.message);
+    return { data, error: null };
+  } catch (err: unknown) {
+    return { data: null, error: err instanceof Error ? err.message : 'Failed to fetch recipe' };
+  }
+}
+
+export async function saveRecipeItem(
+  menuProductId: string,
+  rawProductId: string,
+  quantityRequired: number,
+  unitName?: string
+): Promise<{ success: boolean; error: string | null }> {
+  try {
+    const user = await getAuthenticatedUser();
+    if (!user) return { success: false, error: 'Unauthorized' };
+
+    const supabase = await createSupabaseServerClient();
+    const { error } = await supabase
+      .from('recipes')
+      .upsert({
+        user_id: user.id,
+        menu_product_id: menuProductId,
+        raw_product_id: rawProductId,
+        quantity_required: quantityRequired,
+        unit_name: unitName || 'pcs',
+      }, { onConflict: 'menu_product_id,raw_product_id' });
+
+    if (error) throw new Error(error.message);
+    revalidatePath('/inventory');
+    return { success: true, error: null };
+  } catch (err: unknown) {
+    return { success: false, error: err instanceof Error ? err.message : 'Failed to save recipe item' };
+  }
+}
+
+export async function deleteRecipeItem(recipeId: string): Promise<{ success: boolean; error: string | null }> {
+  try {
+    const user = await getAuthenticatedUser();
+    if (!user) return { success: false, error: 'Unauthorized' };
+
+    const supabase = await createSupabaseServerClient();
+    const { error } = await supabase
+      .from('recipes')
+      .delete()
+      .eq('id', recipeId)
+      .eq('user_id', user.id);
+
+    if (error) throw new Error(error.message);
+    revalidatePath('/inventory');
+    return { success: true, error: null };
+  } catch (err: unknown) {
+    return { success: false, error: err instanceof Error ? err.message : 'Failed to delete recipe item' };
+  }
+}
+
 

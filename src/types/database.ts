@@ -34,6 +34,11 @@ export interface Sale {
   cash_discrepancy?: number | null;
   entry_mode: EntryMode;
   payment_method: PaymentMethod;
+  is_voided?: boolean;
+  void_reason?: string | null;
+  customer_notes?: string | null;
+  amount_paid?: number | null;
+  change_given?: number | null;
   created_at: string;
 }
 
@@ -44,7 +49,28 @@ export interface SaleItem {
   quantity: number;
   unit_price: number;
   unit_cost: number;
+  item_notes?: string | null;
   created_at: string;
+  product?: Product;
+}
+
+export interface Recipe {
+  id: string;
+  user_id: string;
+  menu_product_id: string;
+  raw_product_id: string;
+  quantity_required: number;
+  unit_name?: string;
+  created_at: string;
+  updated_at: string;
+  raw_product?: Product;
+}
+
+export interface UserSettings {
+  user_id: string;
+  daily_target_sales: number;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Expense {
@@ -68,6 +94,7 @@ export interface RestockItem {
   estimatedCost: number;
   itemsPerPackage?: number;
   packageUnitName?: string;
+  type?: ProductType;
 }
 
 export interface DailySummary {
@@ -96,6 +123,16 @@ export interface Database {
         Row: SaleItem;
         Insert: Omit<SaleItem, 'id' | 'created_at'>;
         Update: Partial<Omit<SaleItem, 'id'>>;
+      };
+      recipes: {
+        Row: Recipe;
+        Insert: Omit<Recipe, 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Omit<Recipe, 'id' | 'user_id'>>;
+      };
+      user_settings: {
+        Row: UserSettings;
+        Insert: Omit<UserSettings, 'created_at' | 'updated_at'>;
+        Update: Partial<Omit<UserSettings, 'user_id'>>;
       };
       expenses: {
         Row: Expense;

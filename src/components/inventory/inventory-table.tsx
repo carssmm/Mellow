@@ -10,6 +10,7 @@ import { AddStockModal } from './add-stock-modal';
 
 export function InventoryTable({ products }: { products: Product[] }) {
   const [searchQuery, setSearchQuery] = useState('');
+  const [typeFilter, setTypeFilter] = useState<'all' | 'raw_material' | 'menu_item'>('all');
   
   // Modal state
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -19,10 +20,15 @@ export function InventoryTable({ products }: { products: Product[] }) {
   const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
 
   // Filter products
-  const filteredProducts = products.filter(product => 
-    product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    product.category.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredProducts = products.filter(product => {
+    const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      product.category.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    const matchesType = typeFilter === 'all' || 
+      (typeFilter === 'raw_material' ? (product.type === 'raw_material' || !product.type) : product.type === 'menu_item');
+
+    return matchesSearch && matchesType;
+  });
 
   // Handlers
   const handleAddClick = () => {
@@ -50,33 +56,74 @@ export function InventoryTable({ products }: { products: Product[] }) {
   return (
     <div className="bg-surface-container-lowest border border-outline-variant rounded-xl shadow-ambient overflow-hidden flex flex-col">
       {/* Header & Search */}
-      <div className="p-6 border-b border-outline-variant flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-headline-md font-headline-md">Current Inventory</h2>
-          <p className="text-label-md text-on-surface-variant mt-1">
-            {products.length} items total
-          </p>
-        </div>
-        
-        <div className="flex items-center gap-3 w-full sm:w-auto">
-          <div className="relative flex-1 sm:w-[280px]">
-            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant/70 text-[20px]">
-              search
-            </span>
-            <input
-              type="text"
-              placeholder="Search items..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full h-10 pl-10 pr-4 bg-[#FAFAFA] border border-outline-variant/50 focus:border-[#D4A359] focus:bg-white rounded-lg outline-none transition-colors text-body-md"
-            />
+      <div className="p-6 border-b border-outline-variant flex flex-col gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h2 className="text-headline-md font-headline-md">Current Inventory</h2>
+            <p className="text-label-md text-on-surface-variant mt-1">
+              {filteredProducts.length} of {products.length} items shown
+            </p>
           </div>
+          
+          <div className="flex items-center gap-3 w-full sm:w-auto">
+            <div className="relative flex-1 sm:w-[240px]">
+              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant/70 text-[20px]">
+                search
+              </span>
+              <input
+                type="text"
+                placeholder="Search items..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full h-10 pl-10 pr-4 bg-[#FAFAFA] border border-outline-variant/50 focus:border-[#D4A359] focus:bg-white rounded-lg outline-none transition-colors text-body-md"
+              />
+            </div>
+            <button
+              onClick={handleAddClick}
+              className="h-10 px-4 bg-primary-container hover:bg-primary-container/90 text-on-primary rounded-lg font-label-md flex items-center gap-2 transition-colors whitespace-nowrap"
+            >
+              <span className="material-symbols-outlined text-[18px]">add</span>
+              <span>Add Product</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Filter Tabs */}
+        <div className="flex items-center gap-2 border-t border-outline-variant/40 pt-3 overflow-x-auto">
           <button
-            onClick={handleAddClick}
-            className="h-10 px-4 bg-primary-container hover:bg-primary-container/90 text-on-primary rounded-lg font-label-md flex items-center gap-2 transition-colors whitespace-nowrap"
+            onClick={() => setTypeFilter('all')}
+            className={cn(
+              "px-3 py-1.5 rounded-lg text-label-md font-medium transition-colors whitespace-nowrap",
+              typeFilter === 'all'
+                ? "bg-primary-container text-on-primary"
+                : "bg-surface-container hover:bg-surface-container-high text-on-surface-variant"
+            )}
           >
-            <span className="material-symbols-outlined text-[18px]">add</span>
-            <span className="hidden sm:inline">Add Product</span>
+            All Items ({products.length})
+          </button>
+          <button
+            onClick={() => setTypeFilter('raw_material')}
+            className={cn(
+              "px-3 py-1.5 rounded-lg text-label-md font-medium transition-colors flex items-center gap-1.5 whitespace-nowrap",
+              typeFilter === 'raw_material'
+                ? "bg-secondary-container text-on-secondary-container font-bold"
+                : "bg-surface-container hover:bg-surface-container-high text-on-surface-variant"
+            )}
+          >
+            <span className="material-symbols-outlined text-[16px]">inventory_2</span>
+            Raw Products ({products.filter(p => p.type === 'raw_material' || !p.type).length})
+          </button>
+          <button
+            onClick={() => setTypeFilter('menu_item')}
+            className={cn(
+              "px-3 py-1.5 rounded-lg text-label-md font-medium transition-colors flex items-center gap-1.5 whitespace-nowrap",
+              typeFilter === 'menu_item'
+                ? "bg-primary-container text-on-primary font-bold"
+                : "bg-surface-container hover:bg-surface-container-high text-on-surface-variant"
+            )}
+          >
+            <span className="material-symbols-outlined text-[16px]">local_cafe</span>
+            Menu Items ({products.filter(p => p.type === 'menu_item').length})
           </button>
         </div>
       </div>
@@ -189,27 +236,27 @@ export function InventoryTable({ products }: { products: Product[] }) {
                       </Badge>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex items-center justify-end gap-1.5 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                         {!isMenuItem && (
                           <button
                             onClick={() => handleAddStockClick(product)}
-                            className="px-2 py-1 bg-surface-container hover:bg-primary-container hover:text-on-primary text-on-surface rounded-md text-label-md flex items-center gap-1 transition-colors"
+                            className="px-2.5 py-1.5 bg-surface-container hover:bg-primary-container hover:text-on-primary text-on-surface rounded-md text-label-md flex items-center gap-1 transition-colors shadow-sm md:shadow-none"
                             title="Add Stock"
                           >
                             <span className="material-symbols-outlined text-[16px]">add_box</span>
-                            <span>+ Stock</span>
+                            <span className="text-xs font-semibold">+ Stock</span>
                           </button>
                         )}
                         <button 
                           onClick={() => handleEditClick(product)}
-                          className="p-1.5 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-md transition-colors"
+                          className="p-2 text-on-surface-variant hover:text-primary hover:bg-surface-container bg-surface-container/50 md:bg-transparent rounded-md transition-colors"
                           title="Edit Product"
                         >
                           <span className="material-symbols-outlined text-[18px]">edit</span>
                         </button>
                         <button 
                           onClick={() => handleDeleteClick(product)}
-                          className="p-1.5 text-on-surface-variant hover:text-error hover:bg-error-container/30 rounded-md transition-colors"
+                          className="p-2 text-on-surface-variant hover:text-error hover:bg-error-container/30 bg-surface-container/50 md:bg-transparent rounded-md transition-colors"
                           title="Delete Product"
                         >
                           <span className="material-symbols-outlined text-[18px]">delete</span>

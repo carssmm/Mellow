@@ -20,25 +20,10 @@ export interface TopProduct {
   totalRevenue: number;
 }
 
+import { getPHDateRangeISO } from '@/lib/date-utils';
+
 function getRangeDates(startDateStr?: string, endDateStr?: string) {
-  let start: Date;
-  let end: Date;
-
-  if (startDateStr && endDateStr) {
-    start = new Date(startDateStr);
-    start.setHours(0, 0, 0, 0);
-    end = new Date(endDateStr);
-    end.setHours(23, 59, 59, 999);
-  } else {
-    // Default to "This Month"
-    const now = new Date();
-    start = new Date(now.getFullYear(), now.getMonth(), 1);
-    start.setHours(0, 0, 0, 0);
-    end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-    end.setHours(23, 59, 59, 999);
-  }
-
-  return { startISO: start.toISOString(), endISO: end.toISOString() };
+  return getPHDateRangeISO(startDateStr, endDateStr);
 }
 
 export async function getSalesAnalytics(
