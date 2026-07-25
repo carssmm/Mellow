@@ -10,6 +10,7 @@ export const saleItemSchema = z.object({
 export const quickTapSaleSchema = z.object({
   items: z.array(saleItemSchema).min(1, "Cart cannot be empty"),
   paymentMethod: z.enum(['cash', 'gcash_maya']),
+  customerNotes: z.string().optional(),
 });
 
 export const batchSaleSchema = z.object({

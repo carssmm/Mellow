@@ -19,6 +19,7 @@ export function QuickTapMode({ products }: { products: Product[] }) {
   const [activeCategory, setActiveCategory] = useState<string>('All');
   const [cart, setCart] = useState<CartItem[]>([]);
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'gcash_maya'>('cash');
+  const [customerNotes, setCustomerNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Extract unique categories
@@ -78,7 +79,8 @@ export function QuickTapMode({ products }: { products: Product[] }) {
         unitPrice: i.unitPrice,
         unitCost: i.unitCost
       })),
-      paymentMethod
+      paymentMethod,
+      customerNotes: customerNotes.trim() || undefined,
     };
 
     const result = await recordQuickTapSale(payload);
@@ -89,6 +91,7 @@ export function QuickTapMode({ products }: { products: Product[] }) {
         result.warnings.forEach(warning => showToast(warning, 'warning'));
       }
       setCart([]); // clear cart
+      setCustomerNotes('');
     } else {
       showToast(result.error || 'Failed to record sale', 'error');
     }
@@ -216,6 +219,17 @@ export function QuickTapMode({ products }: { products: Product[] }) {
               <span className="text-headline-lg font-headline-lg text-on-surface">
                 {formatCurrency(cartTotal)}
               </span>
+            </div>
+
+            {/* Customer Order Notes */}
+            <div className="mb-3">
+              <input
+                type="text"
+                placeholder="Order notes (e.g. less ice, oat milk)..."
+                value={customerNotes}
+                onChange={(e) => setCustomerNotes(e.target.value)}
+                className="w-full h-9 px-3 bg-surface border border-outline-variant/60 focus:border-primary rounded-lg text-xs outline-none"
+              />
             </div>
 
             <div className="grid grid-cols-2 gap-2 mb-4">

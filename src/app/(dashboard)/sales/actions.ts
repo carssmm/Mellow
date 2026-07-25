@@ -221,6 +221,7 @@ export async function recordQuickTapSale(data: unknown): Promise<{ success: bool
       net_profit: netProfit,
       entry_mode: 'quick_tap',
       payment_method: parsed.paymentMethod,
+      customer_notes: parsed.customerNotes || null,
     }).select().single();
 
     if (saleError || !saleRecord) throw new Error(saleError?.message || 'Failed to create sale record');
