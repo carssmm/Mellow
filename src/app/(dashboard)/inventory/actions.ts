@@ -63,6 +63,7 @@ export async function createProduct(formData: FormData): Promise<{ success: bool
       package_price: formData.get('package_price') || undefined,
       items_per_package: formData.get('items_per_package') || undefined,
       package_unit_name: formData.get('package_unit_name') || undefined,
+      unit_name: formData.get('unit_name') || undefined,
     };
 
     const validatedData = createProductSchema.parse(inputData);
@@ -109,6 +110,7 @@ export async function updateProduct(formData: FormData): Promise<{ success: bool
       package_price: formData.get('package_price') !== null ? formData.get('package_price') : undefined,
       items_per_package: formData.get('items_per_package') || undefined,
       package_unit_name: formData.get('package_unit_name') || undefined,
+      unit_name: formData.get('unit_name') || undefined,
     };
 
     const validatedData = updateProductSchema.parse(inputData);

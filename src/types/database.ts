@@ -19,6 +19,7 @@ export interface Product {
   package_price?: number | null;
   items_per_package?: number;
   package_unit_name?: string;
+  unit_name?: string;
   created_at: string;
   updated_at: string;
 }

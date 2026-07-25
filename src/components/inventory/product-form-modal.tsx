@@ -251,9 +251,9 @@ export function ProductFormModal({ mode, product, onClose }: ProductFormModalPro
                       </div>
                     )}
                     
-                    <div className={productType === 'raw_material' ? "col-span-2" : ""}>
+                    <div>
                       <label htmlFor="unit_cost" className="block text-label-md text-on-surface-variant mb-1.5">
-                        {productType === 'menu_item' ? 'Cost per Piece (₱)' : 'Cost per Unit / Liter (₱)'}
+                        {productType === 'menu_item' ? 'Cost per Piece (₱)' : 'Cost per Unit (₱)'}
                       </label>
                       <input 
                         id="unit_cost" 
@@ -268,6 +268,33 @@ export function ProductFormModal({ mode, product, onClose }: ProductFormModalPro
                         className={InputStyle} 
                       />
                     </div>
+
+                    {productType === 'raw_material' && (
+                      <div className="col-span-2">
+                        <label htmlFor="unit_name" className="block text-label-md text-on-surface-variant mb-1.5">
+                          Unit of Measurement (Base Unit)
+                        </label>
+                        <select
+                          id="unit_name"
+                          name="unit_name"
+                          defaultValue={product?.unit_name || 'Liter'}
+                          className={InputStyle}
+                        >
+                          <option value="Liter">Liter (L)</option>
+                          <option value="ml">Milliliter (ml)</option>
+                          <option value="Bottle">Bottle</option>
+                          <option value="Carton">Carton</option>
+                          <option value="Gallon">Gallon</option>
+                          <option value="kg">Kilogram (kg)</option>
+                          <option value="g">Gram (g)</option>
+                          <option value="pcs">Pieces (pcs)</option>
+                          <option value="Can">Can</option>
+                          <option value="Jar">Jar</option>
+                          <option value="Pail">Pail</option>
+                          <option value="Pack">Pack</option>
+                        </select>
+                      </div>
+                    )}
                   </div>
 
                   {productType === 'raw_material' && (

@@ -228,7 +228,7 @@ export function InventoryTable({ products }: { products: Product[] }) {
                             status === 'low_stock' ? "text-amber-600 font-bold" :
                             "text-on-surface font-semibold"
                           )}>
-                            {product.current_stock} pcs
+                            {product.current_stock} {product.unit_name || 'pcs'}
                           </span>
                           {packageSubtext && (
                             <div className="text-label-md text-on-surface-variant font-normal">
@@ -239,7 +239,7 @@ export function InventoryTable({ products }: { products: Product[] }) {
                       )}
                     </td>
                     <td className="px-6 py-4 text-right font-number-data text-on-surface-variant">
-                      {isMenuItem ? '-' : `${product.low_stock_threshold} pcs`}
+                      {isMenuItem ? '-' : `${product.low_stock_threshold} ${product.unit_name || 'pcs'}`}
                     </td>
                     <td className="px-6 py-4 text-center">
                       <Badge variant={status}>
