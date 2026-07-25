@@ -164,10 +164,23 @@ export function InventoryTable({ products }: { products: Product[] }) {
                 if (hasPackages && product.current_stock >= 0) {
                   const boxes = Math.floor(product.current_stock / itemsPerPkg);
                   const remainder = product.current_stock % itemsPerPkg;
-                  if (remainder === 0) {
-                    packageSubtext = `(${boxes} ${pkgName}${boxes === 1 ? '' : 'es'})`;
+
+                  // Check if container is liquid (ml) or weight (g)
+                  const isLiquidMl = itemsPerPkg >= 500 && (pkgName === 'carton' || pkgName === 'bottle' || pkgName === 'gallon' || pkgName === 'box' || pkgName === 'case');
+                  
+                  if (isLiquidMl) {
+                    const litersPerPkg = (itemsPerPkg / 1000).toFixed(1);
+                    if (remainder === 0) {
+                      packageSubtext = `(${boxes} ${pkgName}${boxes === 1 ? '' : 's'} @ ${litersPerPkg}L)`;
+                    } else {
+                      packageSubtext = `(${boxes} ${pkgName}${boxes === 1 ? '' : 's'} + ${remainder} ml)`;
+                    }
                   } else {
-                    packageSubtext = `(${boxes} ${pkgName}${boxes === 1 ? '' : 'es'}, ${remainder} pcs)`;
+                    if (remainder === 0) {
+                      packageSubtext = `(${boxes} ${pkgName}${boxes === 1 ? '' : 's'})`;
+                    } else {
+                      packageSubtext = `(${boxes} ${pkgName}${boxes === 1 ? '' : 's'}, ${remainder} left)`;
+                    }
                   }
                 }
                 
