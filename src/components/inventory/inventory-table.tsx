@@ -222,7 +222,7 @@ export function InventoryTable({ products }: { products: Product[] }) {
                       {isMenuItem ? (
                         <span className="text-on-surface-variant/50">-</span>
                       ) : (
-                        <div>
+                        <div className="flex flex-col items-end gap-1">
                           <span className={cn(
                             status === 'out_of_stock' ? "text-error font-bold" :
                             status === 'low_stock' ? "text-amber-600 font-bold" :
@@ -230,11 +230,56 @@ export function InventoryTable({ products }: { products: Product[] }) {
                           )}>
                             {product.current_stock} {product.unit_name || 'pcs'}
                           </span>
-                          {packageSubtext && (
-                            <div className="text-label-md text-on-surface-variant font-normal">
-                              {packageSubtext}
-                            </div>
-                          )}
+
+                          {/* Visual Stock Level Progress Bar */}
+                          {(() => {
+                            const maxStock = product.target_stock || (product.low_stock_threshold * 2) || 10;
+                            const percentage = Math.min(100, Math.max(0, Math.round((product.current_stock / maxStock) * 100)));
+                            const barColor = 
+                              status === 'out_of_stock' ? 'bg-error' :
+                              status === 'low_stock' ? 'bg-amber-500' :
+                              'bg-emerald-500';
+
+                            // Extra visual text for liquid/capacity items (e.g. 4.98 bottles -> 4 bottles + 980ml)
+                            const capacity = product.piece_capacity || 1;
+                            const capUnit = product.piece_capacity_unit || 'ml';
+                            const isMeasured = capacity > 1;
+
+                            let measuredSubtext = '';
+                            if (isMeasured && product.current_stock > 0) {
+                              const wholePieces = Math.floor(product.current_stock);
+                              const remainingPortion = Math.round((product.current_stock - wholePieces) * capacity);
+                              if (remainingPortion > 0) {
+                                measuredSubtext = `${wholePieces} ${product.unit_name || 'pcs'} + ${remainingPortion}${capUnit}`;
+                              } else {
+                                measuredSubtext = `${wholePieces} full ${product.unit_name || 'pcs'}`;
+                              }
+                            }
+
+                            return (
+                              <div className="w-28 space-y-1">
+                                <div className="w-full bg-surface-container-high h-2 rounded-full overflow-hidden border border-outline-variant/30">
+                                  <div 
+                                    className={cn("h-full transition-all duration-500 rounded-full", barColor)}
+                                    style={{ width: `${percentage}%` }}
+                                  />
+                                </div>
+                                {measuredSubtext ? (
+                                  <div className="text-[10px] text-primary font-semibold tracking-tight whitespace-nowrap">
+                                    {measuredSubtext}
+                                  </div>
+                                ) : packageSubtext ? (
+                                  <div className="text-[10px] text-on-surface-variant font-normal">
+                                    {packageSubtext}
+                                  </div>
+                                ) : (
+                                  <div className="text-[10px] text-on-surface-variant/70">
+                                    {percentage}% of target ({maxStock})
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })()}
                         </div>
                       )}
                     </td>
