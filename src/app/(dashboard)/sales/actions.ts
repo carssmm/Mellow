@@ -57,7 +57,11 @@ async function decrementStock(
             .single();
 
           if (rawProduct) {
-            const updatedStock = (rawProduct.current_stock || 0) - totalIngredientQty;
+            // Check capacity unit conversion (e.g. 1 bottle = 1000ml, recipe uses 20ml => deduct 20 / 1000 = 0.02 pcs)
+            const capacity = Number(rawProduct.piece_capacity || 1);
+            const deductedPieces = capacity > 0 ? (totalIngredientQty / capacity) : totalIngredientQty;
+
+            const updatedStock = (rawProduct.current_stock || 0) - deductedPieces;
             if (updatedStock < 0) {
               warnings.push(`Ingredient "${rawProduct.name}" stock is now negative (${updatedStock}).`);
             }
@@ -127,9 +131,12 @@ export async function voidSale(saleId: string, voidReason: string): Promise<{ su
                 .single();
 
               if (rawProduct) {
+                const capacity = Number((rawProduct as any).piece_capacity || 1);
+                const restoredPieces = capacity > 0 ? (restoredQty / capacity) : restoredQty;
+
                 await supabase
                   .from('products')
-                  .update({ current_stock: (rawProduct.current_stock || 0) + restoredQty })
+                  .update({ current_stock: (rawProduct.current_stock || 0) + restoredPieces })
                   .eq('id', rawProduct.id);
               }
             }

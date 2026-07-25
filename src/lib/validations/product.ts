@@ -17,6 +17,8 @@ export const createProductSchema = z.object({
   items_per_package: z.coerce.number().int().min(1, "Items per package must be at least 1").default(1),
   package_unit_name: z.string().min(1, "Package label is required").default('box'),
   unit_name: z.string().default('pcs'),
+  piece_capacity: z.coerce.number().min(0.0001, "Capacity must be greater than 0").default(1),
+  piece_capacity_unit: z.string().default('ml'),
 });
 
 export const updateProductSchema = createProductSchema.partial().extend({

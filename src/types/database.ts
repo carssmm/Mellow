@@ -20,6 +20,8 @@ export interface Product {
   items_per_package?: number;
   package_unit_name?: string;
   unit_name?: string;
+  piece_capacity?: number;
+  piece_capacity_unit?: string;
   created_at: string;
   updated_at: string;
 }

@@ -270,30 +270,64 @@ export function ProductFormModal({ mode, product, onClose }: ProductFormModalPro
                     </div>
 
                     {productType === 'raw_material' && (
-                      <div className="col-span-2">
-                        <label htmlFor="unit_name" className="block text-label-md text-on-surface-variant mb-1.5">
-                          Unit of Measurement (Base Unit)
-                        </label>
-                        <select
-                          id="unit_name"
-                          name="unit_name"
-                          defaultValue={product?.unit_name || 'Liter'}
-                          className={InputStyle}
-                        >
-                          <option value="Liter">Liter (L)</option>
-                          <option value="ml">Milliliter (ml)</option>
-                          <option value="Bottle">Bottle</option>
-                          <option value="Carton">Carton</option>
-                          <option value="Gallon">Gallon</option>
-                          <option value="kg">Kilogram (kg)</option>
-                          <option value="g">Gram (g)</option>
-                          <option value="pcs">Pieces (pcs)</option>
-                          <option value="Can">Can</option>
-                          <option value="Jar">Jar</option>
-                          <option value="Pail">Pail</option>
-                          <option value="Pack">Pack</option>
-                        </select>
-                      </div>
+                      <>
+                        <div>
+                          <label htmlFor="unit_name" className="block text-label-md text-on-surface-variant mb-1.5">
+                            Count Inventory By
+                          </label>
+                          <select
+                            id="unit_name"
+                            name="unit_name"
+                            defaultValue={product?.unit_name || 'pcs'}
+                            className={InputStyle}
+                          >
+                            <option value="pcs">Pieces (pcs)</option>
+                            <option value="Bottle">Bottle</option>
+                            <option value="Carton">Carton</option>
+                            <option value="Bag">Bag</option>
+                            <option value="Can">Can</option>
+                            <option value="Gallon">Gallon</option>
+                          </select>
+                        </div>
+
+                        <div className="col-span-2 border-t border-outline-variant/40 pt-3">
+                          <label className="block text-label-md font-semibold text-primary mb-1.5">
+                            Serving / Capacity Equivalence (per 1 Item)
+                          </label>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <span className="block text-xs text-on-surface-variant mb-1">Volume / Weight per Item</span>
+                              <input
+                                id="piece_capacity"
+                                name="piece_capacity"
+                                type="number"
+                                step="any"
+                                min="0.001"
+                                defaultValue={product?.piece_capacity || 1000}
+                                placeholder="e.g. 1000 for 1L"
+                                className={InputStyle}
+                              />
+                            </div>
+                            <div>
+                              <span className="block text-xs text-on-surface-variant mb-1">Portion Unit</span>
+                              <select
+                                id="piece_capacity_unit"
+                                name="piece_capacity_unit"
+                                defaultValue={product?.piece_capacity_unit || 'ml'}
+                                className={InputStyle}
+                              >
+                                <option value="ml">ml (Milliliters)</option>
+                                <option value="g">g (Grams)</option>
+                                <option value="pcs">pcs (Pieces)</option>
+                                <option value="oz">oz (Ounces)</option>
+                              </select>
+                            </div>
+                          </div>
+                          <p className="text-[11px] text-on-surface-variant mt-1.5">
+                            💡 <i>Example: If 1 bottle contains 1000ml, set Volume = 1000 & Portion Unit = ml. In recipe builder, adding 20ml will automatically deduct 20/1000 = 0.02 bottles per sale!</i>
+                          </p>
+                        </div>
+                      </>
                     )}
                   </div>
 

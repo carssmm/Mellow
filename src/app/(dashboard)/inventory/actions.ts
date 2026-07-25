@@ -64,6 +64,8 @@ export async function createProduct(formData: FormData): Promise<{ success: bool
       items_per_package: formData.get('items_per_package') || undefined,
       package_unit_name: formData.get('package_unit_name') || undefined,
       unit_name: formData.get('unit_name') || undefined,
+      piece_capacity: formData.get('piece_capacity') || undefined,
+      piece_capacity_unit: formData.get('piece_capacity_unit') || undefined,
     };
 
     const validatedData = createProductSchema.parse(inputData);
@@ -111,6 +113,8 @@ export async function updateProduct(formData: FormData): Promise<{ success: bool
       items_per_package: formData.get('items_per_package') || undefined,
       package_unit_name: formData.get('package_unit_name') || undefined,
       unit_name: formData.get('unit_name') || undefined,
+      piece_capacity: formData.get('piece_capacity') || undefined,
+      piece_capacity_unit: formData.get('piece_capacity_unit') || undefined,
     };
 
     const validatedData = updateProductSchema.parse(inputData);
