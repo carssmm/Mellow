@@ -253,7 +253,7 @@ export function ProductFormModal({ mode, product, onClose }: ProductFormModalPro
                     
                     <div className={productType === 'raw_material' ? "col-span-2" : ""}>
                       <label htmlFor="unit_cost" className="block text-label-md text-on-surface-variant mb-1.5">
-                        {productType === 'menu_item' ? 'Cost per Piece (₱)' : 'Cost per Unit (₱)'}
+                        {productType === 'menu_item' ? 'Cost per Piece (₱)' : 'Cost per Unit / Liter (₱)'}
                       </label>
                       <input 
                         id="unit_cost" 
@@ -269,6 +269,18 @@ export function ProductFormModal({ mode, product, onClose }: ProductFormModalPro
                       />
                     </div>
                   </div>
+
+                  {productType === 'raw_material' && (
+                    <div className="bg-primary-container/10 border border-primary-container/40 p-3 rounded-lg text-xs text-on-surface space-y-1">
+                      <div className="font-bold flex items-center gap-1 text-primary">
+                        <span className="material-symbols-outlined text-[16px]">info</span>
+                        <span>Liquid / Grams Portion Tip:</span>
+                      </div>
+                      <p className="text-on-surface-variant">
+                        Set <strong>Cost per Unit</strong> to your bottle/carton price (e.g. ₱90 per 1L Milk). In your drink recipe, add <strong>0.02</strong> (for 20ml). Mellow will deduct <strong>0.02</strong> per sale without removing a whole bottle!
+                      </p>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="space-y-4 animate-in fade-in duration-200">
@@ -328,18 +340,6 @@ export function ProductFormModal({ mode, product, onClose }: ProductFormModalPro
                       </div>
                     )}
                   </div>
-
-                  {productType === 'raw_material' && (
-                    <div className="bg-primary-container/10 border border-primary-container/40 p-3 rounded-lg text-xs text-on-surface space-y-1">
-                      <div className="font-bold flex items-center gap-1 text-primary">
-                        <span className="material-symbols-outlined text-[16px]">info</span>
-                        <span>Liquid / Grams Setup Tip:</span>
-                      </div>
-                      <p className="text-on-surface-variant">
-                        For liquids like milk or syrup, set <strong>Items per Box = 1000</strong> (for 1 Liter) or <strong>12000</strong> (for a 12L case). Then recipe sales will cleanly deduct <strong>20ml</strong> or <strong>150ml</strong> per cup!
-                      </p>
-                    </div>
-                  )}
 
                   {productType === 'menu_item' && (
                     <div className="grid grid-cols-2 gap-3">
