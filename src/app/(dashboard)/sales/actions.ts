@@ -51,7 +51,7 @@ async function decrementStock(
           
           const { data: rawProduct } = await supabase
             .from('products')
-            .select('id, name, current_stock')
+            .select('id, name, current_stock, piece_capacity')
             .eq('id', recipe.raw_product_id)
             .eq('user_id', userId)
             .single();
@@ -163,7 +163,7 @@ export async function voidSale(saleId: string, voidReason: string): Promise<{ su
               const restoredQty = Number(recipe.quantity_required) * item.quantity;
               const { data: rawProduct } = await supabase
                 .from('products')
-                .select('id, current_stock')
+                .select('id, current_stock, piece_capacity')
                 .eq('id', recipe.raw_product_id)
                 .single();
 
