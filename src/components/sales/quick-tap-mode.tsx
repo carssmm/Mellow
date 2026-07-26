@@ -100,7 +100,8 @@ export function QuickTapMode({ products }: { products: Product[] }) {
         productId: i.productId,
         quantity: i.quantity,
         unitPrice: i.unitPrice,
-        unitCost: i.unitCost
+        unitCost: i.unitCost,
+        addonIds: i.selectedAddons?.map(a => a.id),
       })),
       paymentMethod,
       customerNotes: customerNotes.trim() || undefined,

@@ -5,6 +5,7 @@ export const saleItemSchema = z.object({
   quantity: z.number().int().positive("Quantity must be greater than 0"),
   unitPrice: z.number().min(0, "Unit price cannot be negative"),
   unitCost: z.number().min(0, "Unit cost cannot be negative"),
+  addonIds: z.array(z.string().uuid()).optional(),
 });
 
 export const quickTapSaleSchema = z.object({

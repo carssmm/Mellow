@@ -43,8 +43,11 @@ export function AddonManager({ productId }: AddonManagerProps) {
     loadData();
   }, [productId]);
 
-  const handleAdd = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleAdd = async (e?: React.FormEvent | React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     if (!name.trim() || isNaN(Number(price))) return;
 
     setIsAdding(true);
@@ -129,7 +132,7 @@ export function AddonManager({ productId }: AddonManagerProps) {
       )}
 
       {/* Add New Add-on Form */}
-      <form onSubmit={handleAdd} className="bg-surface-container-lowest border border-outline-variant/50 p-3 rounded-lg flex flex-col gap-2">
+      <div className="bg-surface-container-lowest border border-outline-variant/50 p-3 rounded-lg flex flex-col gap-2">
         <div className="text-xs font-semibold text-on-surface-variant">Create New Custom Add-on</div>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -181,14 +184,15 @@ export function AddonManager({ productId }: AddonManagerProps) {
         </div>
 
         <button
-          type="submit"
+          type="button"
+          onClick={handleAdd}
           disabled={isAdding || !name.trim()}
           className="h-8 mt-1 px-3 bg-primary-container hover:bg-primary-container/90 text-on-primary rounded-md text-xs font-semibold flex items-center justify-center gap-1 transition-colors self-end disabled:opacity-50"
         >
           <span className="material-symbols-outlined text-[16px]">add</span>
           <span>{isAdding ? 'Saving...' : 'Save Add-on'}</span>
         </button>
-      </form>
+      </div>
     </div>
   );
 }

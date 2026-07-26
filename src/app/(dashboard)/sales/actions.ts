@@ -10,7 +10,7 @@ import { getPHStartOfDayISO, getPHDateRangeISO } from '@/lib/date-utils';
 async function decrementStock(
   supabase: ReturnType<typeof import('@supabase/ssr').createServerClient>,
   userId: string,
-  items: { productId: string; quantity: number }[]
+  items: { productId: string; quantity: number; addonIds?: string[] }[]
 ): Promise<string[]> {
   const warnings: string[] = [];
   
@@ -70,6 +70,43 @@ async function decrementStock(
               .update({ current_stock: updatedStock })
               .eq('id', rawProduct.id)
               .eq('user_id', userId);
+          }
+        }
+      }
+    }
+
+    // Deduct stock for linked add-ons if any
+    if (item.addonIds && item.addonIds.length > 0) {
+      const { data: addons } = await supabase
+        .from('product_addons')
+        .select('raw_product_id, raw_quantity')
+        .in('id', item.addonIds)
+        .eq('user_id', userId);
+
+      if (addons) {
+        for (const addon of addons) {
+          if (addon.raw_product_id) {
+            const totalAddonQty = Number(addon.raw_quantity || 1) * item.quantity;
+            const { data: rawProduct } = await supabase
+              .from('products')
+              .select('id, name, current_stock, piece_capacity')
+              .eq('id', addon.raw_product_id)
+              .eq('user_id', userId)
+              .single();
+
+            if (rawProduct) {
+              const capacity = Number((rawProduct as any).piece_capacity || 1);
+              const deductedPieces = capacity > 0 ? (totalAddonQty / capacity) : totalAddonQty;
+              const updatedStock = (rawProduct.current_stock || 0) - deductedPieces;
+              if (updatedStock < 0) {
+                warnings.push(`Add-on ingredient "${rawProduct.name}" stock is now negative (${updatedStock}).`);
+              }
+              await supabase
+                .from('products')
+                .update({ current_stock: updatedStock })
+                .eq('id', rawProduct.id)
+                .eq('user_id', userId);
+            }
           }
         }
       }
