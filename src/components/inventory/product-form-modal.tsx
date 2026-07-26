@@ -45,6 +45,12 @@ export function ProductFormModal({ mode, product, onClose }: ProductFormModalPro
   const [unitName, setUnitName] = useState<string>(
     product?.unit_name || 'pcs'
   );
+  const [pieceCapacity, setPieceCapacity] = useState<string>(
+    product?.piece_capacity !== undefined && product?.piece_capacity !== null ? String(product.piece_capacity) : ''
+  );
+  const [pieceCapacityUnit, setPieceCapacityUnit] = useState<string>(
+    product?.piece_capacity_unit || 'pieces'
+  );
 
   // Close on escape key or click outside
   useEffect(() => {
@@ -94,6 +100,12 @@ export function ProductFormModal({ mode, product, onClose }: ProductFormModalPro
       formData.append('id', product.id);
     }
     formData.append('type', productType);
+
+    if (productType === 'raw_material') {
+      formData.delete('selling_price');
+      formData.set('piece_capacity', pieceCapacity);
+      formData.set('piece_capacity_unit', pieceCapacityUnit);
+    }
 
     if (productType === 'menu_item') {
       formData.set('selling_price', sellingPrice);
@@ -518,7 +530,40 @@ export function ProductFormModal({ mode, product, onClose }: ProductFormModalPro
             </div>
 
             {productType === 'raw_material' && (
-              <div className="grid grid-cols-3 gap-4 animate-in fade-in duration-200">
+              <>
+                <div className="grid grid-cols-2 gap-4 animate-in fade-in duration-200 border-b border-outline-variant/40 pb-4 mb-4">
+                  <div>
+                    <label htmlFor="piece_capacity" className="block text-label-md text-on-surface-variant mb-1.5">
+                      Measurement per Piece (e.g. 1000)
+                    </label>
+                    <input 
+                      id="piece_capacity" 
+                      name="piece_capacity" 
+                      type="number" 
+                      step="any"
+                      min="0.001"
+                      value={pieceCapacity}
+                      onChange={(e) => setPieceCapacity(e.target.value)}
+                      placeholder="e.g. 1000" 
+                      className={InputStyle} 
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="piece_capacity_unit" className="block text-label-md text-on-surface-variant mb-1.5">
+                      Measurement Unit (e.g. ml, g)
+                    </label>
+                    <input 
+                      id="piece_capacity_unit" 
+                      name="piece_capacity_unit" 
+                      type="text" 
+                      value={pieceCapacityUnit}
+                      onChange={(e) => setPieceCapacityUnit(e.target.value)}
+                      placeholder="e.g. ml, g, shot" 
+                      className={InputStyle} 
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-4 animate-in fade-in duration-200">
                 <div>
                   <label htmlFor="current_stock" className="block text-label-md text-on-surface-variant mb-1.5">Current Stock ({unitName})</label>
                   <input 
@@ -559,7 +604,8 @@ export function ProductFormModal({ mode, product, onClose }: ProductFormModalPro
                   />
                 </div>
               </div>
-            )}
+            </>
+          )}
 
             {productType === 'menu_item' && mode === 'edit' && product?.id && (
               <>
