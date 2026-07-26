@@ -160,6 +160,7 @@ export async function voidSale(saleId: string, voidReason: string): Promise<{ su
     revalidatePath('/sales');
     revalidatePath('/inventory');
     revalidatePath('/dashboard');
+    revalidatePath('/analytics');
 
     return { success: true };
   } catch (err: unknown) {
@@ -221,7 +222,7 @@ export async function recordQuickTapSale(data: unknown): Promise<{ success: bool
     const supabase = await createSupabaseServerClient();
     
     // Insert Sale
-    const { data: saleRecord, error: saleError } = await supabase.from('sales').insert({
+    const saleInsertData: any = {
       user_id: user.id,
       total_revenue: totalRevenue,
       total_cogs: totalCogs,
@@ -229,18 +230,28 @@ export async function recordQuickTapSale(data: unknown): Promise<{ success: bool
       entry_mode: 'quick_tap',
       payment_method: parsed.paymentMethod,
       customer_notes: parsed.customerNotes || null,
-    }).select().single();
+    };
+
+    if (parsed.createdAt) {
+      saleInsertData.created_at = parsed.createdAt;
+    }
+
+    const { data: saleRecord, error: saleError } = await supabase.from('sales').insert(saleInsertData).select().single();
 
     if (saleError || !saleRecord) throw new Error(saleError?.message || 'Failed to create sale record');
 
     // Insert Sale Items
-    const salesItemsData = parsed.items.map(item => ({
-      sale_id: saleRecord.id,
-      product_id: item.productId,
-      quantity: item.quantity,
-      unit_price: item.unitPrice,
-      unit_cost: item.unitCost,
-    }));
+    const salesItemsData = parsed.items.map(item => {
+      const itemData: any = {
+        sale_id: saleRecord.id,
+        product_id: item.productId,
+        quantity: item.quantity,
+        unit_price: item.unitPrice,
+        unit_cost: item.unitCost,
+      };
+      if (parsed.createdAt) itemData.created_at = parsed.createdAt;
+      return itemData;
+    });
     
     const { error: itemsError } = await supabase.from('sales_items').insert(salesItemsData);
     if (itemsError) throw new Error(itemsError.message);
@@ -251,6 +262,7 @@ export async function recordQuickTapSale(data: unknown): Promise<{ success: bool
     revalidatePath('/sales');
     revalidatePath('/inventory');
     revalidatePath('/dashboard');
+    revalidatePath('/analytics');
 
     return { success: true, saleId: saleRecord.id, warnings };
   } catch (err: unknown) {
@@ -258,6 +270,36 @@ export async function recordQuickTapSale(data: unknown): Promise<{ success: bool
       return { success: false, error: 'Validation failed for sale data.' };
     }
     return { success: false, error: err instanceof Error ? err.message : 'Failed to record sale' };
+  }
+}
+
+export async function recordNoSalesToday(date: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    const user = await getAuthenticatedUser();
+    if (!user) return { success: false, error: 'Unauthorized' };
+
+    const supabase = await createSupabaseServerClient();
+    
+    // Insert a dummy sale with 0 revenue
+    const { error: saleError } = await supabase.from('sales').insert({
+      user_id: user.id,
+      total_revenue: 0,
+      total_cogs: 0,
+      net_profit: 0,
+      entry_mode: 'no_sales',
+      payment_method: 'cash',
+      created_at: date,
+    });
+
+    if (saleError) throw new Error(saleError.message);
+
+    revalidatePath('/sales');
+    revalidatePath('/dashboard');
+    revalidatePath('/analytics');
+
+    return { success: true };
+  } catch (err: unknown) {
+    return { success: false, error: err instanceof Error ? err.message : 'Failed to record no sales' };
   }
 }
 
@@ -310,6 +352,7 @@ export async function recordBatchSale(data: unknown): Promise<{ success: boolean
     revalidatePath('/sales');
     revalidatePath('/inventory');
     revalidatePath('/dashboard');
+    revalidatePath('/analytics');
 
     return { success: true, saleId: saleRecord.id, warnings };
   } catch (err: unknown) {
@@ -363,6 +406,7 @@ export async function recordReconciliation(data: unknown): Promise<{ success: bo
 
     revalidatePath('/sales');
     revalidatePath('/dashboard');
+    revalidatePath('/analytics');
 
     return { 
       success: true, 
@@ -405,6 +449,7 @@ export async function recordZeroSales(dateStr: string): Promise<{ success: boole
 
     revalidatePath('/sales');
     revalidatePath('/dashboard');
+    revalidatePath('/analytics');
 
     return { success: true };
   } catch (err: unknown) {

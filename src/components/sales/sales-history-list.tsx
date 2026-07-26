@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getSalesByDate, recordZeroSales } from '@/app/(dashboard)/sales/actions';
+import { getSalesByDate, recordNoSalesToday } from '@/app/(dashboard)/sales/actions';
 import { Sale, SaleItem, Product } from '@/types';
 import { formatCurrency } from '@/lib/utils';
 import { ReceiptModal } from './receipt-modal';
@@ -11,7 +11,7 @@ export function SalesHistoryList() {
   const [sales, setSales] = useState<(Sale & { items: (SaleItem & { product: Product })[] })[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRecordingZero, setIsRecordingZero] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().split('T')[0] || '');
   
   const [selectedReceiptSale, setSelectedReceiptSale] = useState<(Sale & { items: (SaleItem & { product: Product })[] }) | null>(null);
   const [selectedVoidSale, setSelectedVoidSale] = useState<Sale | null>(null);
@@ -32,7 +32,7 @@ export function SalesHistoryList() {
   const handleRecordZeroSales = async () => {
     if (window.confirm(`Are you sure you want to record zero sales for ${selectedDate}?`)) {
       setIsRecordingZero(true);
-      await recordZeroSales(selectedDate);
+      await recordNoSalesToday(selectedDate);
       await fetchSales();
       setIsRecordingZero(false);
     }

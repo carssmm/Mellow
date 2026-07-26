@@ -1,5 +1,7 @@
 import { getProducts } from '@/app/(dashboard)/inventory/actions';
-import { RecipeGrid } from '@/components/recipes/recipe-grid';
+import { RecipeManager } from '@/components/recipes/recipe-manager';
+
+export const revalidate = 0; // Dynamic server component
 
 export default async function RecipesPage() {
   const { data: products, error } = await getProducts();
@@ -12,20 +14,21 @@ export default async function RecipesPage() {
     );
   }
 
-  // Only include active menu items for the recipe grid
-  const menuItems = (products || []).filter(p => p.is_active && p.type === 'menu_item');
+  // Filter out inactive products and only include menu items
+  const activeMenuItems = (products || []).filter(p => p.is_active && p.type === 'menu_item');
 
   return (
-    <div className="space-y-8">
-      {/* Page Header */}
-      <div>
-        <h1 className="text-headline-lg font-headline-lg">Recipe Management</h1>
-        <p className="text-body-lg text-on-surface-variant mt-2 max-w-2xl">
-          Tap a menu item below to manage its ingredients and auto-deduction recipe.
-        </p>
+    <div className="space-y-6">
+      <div className="flex justify-between items-end">
+        <div>
+          <h1 className="text-display-sm font-display-sm">Recipe Manager</h1>
+          <p className="text-body-lg text-on-surface-variant mt-1">
+            Select a menu item to configure its raw ingredients
+          </p>
+        </div>
       </div>
 
-      <RecipeGrid products={menuItems} />
+      <RecipeManager products={activeMenuItems} />
     </div>
   );
 }

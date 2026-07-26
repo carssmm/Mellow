@@ -74,7 +74,7 @@ export function RecipeBuilder({ menuProductId }: RecipeBuilderProps) {
   }
 
   return (
-    <div className="mt-6 pt-4 border-t border-outline-variant/60">
+    <div>
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <span className="material-symbols-outlined text-primary text-[20px]">blender</span>

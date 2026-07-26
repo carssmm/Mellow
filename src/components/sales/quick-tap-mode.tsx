@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Product } from '@/types';
 import { formatCurrency, cn } from '@/lib/utils';
-import { recordQuickTapSale } from '@/app/(dashboard)/sales/actions';
+import { recordQuickTapSale, recordNoSalesToday } from '@/app/(dashboard)/sales/actions';
 import { useToast } from '@/components/ui/toast';
 
 import { AddonSelectorModal } from './addon-selector-modal';
@@ -25,7 +25,9 @@ export function QuickTapMode({ products }: { products: Product[] }) {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'gcash_maya'>('cash');
   const [customerNotes, setCustomerNotes] = useState('');
+  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0] || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isNoSalesLoading, setIsNoSalesLoading] = useState(false);
   const [activeProductForAddons, setActiveProductForAddons] = useState<Product | null>(null);
 
   // Extract unique categories
@@ -102,6 +104,7 @@ export function QuickTapMode({ products }: { products: Product[] }) {
       })),
       paymentMethod,
       customerNotes: customerNotes.trim() || undefined,
+      createdAt: selectedDate ? new Date(selectedDate).toISOString() : undefined,
     };
 
     const result = await recordQuickTapSale(payload);
@@ -120,13 +123,46 @@ export function QuickTapMode({ products }: { products: Product[] }) {
     setIsSubmitting(false);
   };
 
+  const handleNoSalesToday = async () => {
+    if (!confirm(`Are you sure you want to record 0 sales for ${selectedDate}?`)) return;
+    setIsNoSalesLoading(true);
+    const result = await recordNoSalesToday(new Date(selectedDate).toISOString());
+    if (result.success) {
+      showToast(`Recorded no sales for ${selectedDate}`, 'success');
+    } else {
+      showToast(result.error || 'Failed to record', 'error');
+    }
+    setIsNoSalesLoading(false);
+  };
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
       {/* Left: Product Grid */}
       <div className="lg:col-span-8 flex flex-col gap-6">
-        {/* Category Chips */}
-        <div className="flex flex-wrap gap-2">
-          {categories.map(cat => (
+        
+        {/* Date Controls & Category Chips */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-surface p-4 rounded-xl border border-outline-variant shadow-soft">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 bg-surface-container-low px-3 py-1.5 rounded-lg border border-outline-variant/50 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all">
+               <span className="material-symbols-outlined text-on-surface-variant text-[18px]">calendar_today</span>
+               <input
+                 type="date"
+                 value={selectedDate}
+                 onChange={(e) => setSelectedDate(e.target.value)}
+                 className="bg-transparent border-none outline-none text-body-md text-on-surface w-36"
+               />
+            </div>
+            <button
+              onClick={handleNoSalesToday}
+              disabled={isNoSalesLoading}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-label-md rounded-lg border border-error text-error hover:bg-error-container/20 transition-colors disabled:opacity-50"
+            >
+              <span className="material-symbols-outlined text-[16px]">block</span>
+              {isNoSalesLoading ? 'Saving...' : 'No Sales Today'}
+            </button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {categories.map(cat => (
             <button
               key={cat}
               onClick={() => setActiveCategory(cat)}
@@ -140,6 +176,7 @@ export function QuickTapMode({ products }: { products: Product[] }) {
               {cat}
             </button>
           ))}
+        </div>
         </div>
 
         {/* Product Tiles */}
