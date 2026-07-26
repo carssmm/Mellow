@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { createSupabaseServerClient, getAuthenticatedUser } from '@/lib/supabase/server';
 import { quickTapSaleSchema, batchSaleSchema, reconciliationSchema } from '@/lib/validations';
 import { Sale, SaleItem, DailySummary, Product } from '@/types';
-import { getPHStartOfDayISO } from '@/lib/date-utils';
+import { getPHStartOfDayISO, getPHDateRangeISO } from '@/lib/date-utils';
 
 // Utility for decrementing stock in Supabase atomically or gracefully
 async function decrementStock(
@@ -378,16 +378,49 @@ export async function recordReconciliation(data: unknown): Promise<{ success: bo
   }
 }
 
-// Fetch sales for "Today" (Philippines Timezone Asia/Manila UTC+8)
-export async function getTodaySales(): Promise<{ data: (Sale & { items: (SaleItem & { product: Product })[] })[] | null; error: string | null }> {
+
+
+export async function recordZeroSales(dateStr: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    const user = await getAuthenticatedUser();
+    if (!user) return { success: false, error: 'Unauthorized' };
+
+    const supabase = await createSupabaseServerClient();
+    const range = getPHDateRangeISO(dateStr, dateStr);
+    
+    const { error: saleError } = await supabase.from('sales').insert({
+      user_id: user.id,
+      total_revenue: 0,
+      total_cogs: 0,
+      net_profit: 0,
+      starting_float: 0,
+      ending_cash: 0,
+      cash_discrepancy: 0,
+      entry_mode: 'reconciliation',
+      payment_method: 'cash',
+      created_at: range.startISO // Record it at the start of that day
+    });
+
+    if (saleError) throw new Error(saleError.message);
+
+    revalidatePath('/sales');
+    revalidatePath('/dashboard');
+
+    return { success: true };
+  } catch (err: unknown) {
+    return { success: false, error: err instanceof Error ? err.message : 'Failed to record zero sales' };
+  }
+}
+
+// Fetch sales for a specific date (Defaults to "Today" in Philippines Timezone)
+export async function getSalesByDate(dateStr?: string): Promise<{ data: (Sale & { items: (SaleItem & { product: Product })[] })[] | null; error: string | null }> {
   try {
     const user = await getAuthenticatedUser();
     if (!user) return { data: null, error: 'Unauthorized' };
 
     const supabase = await createSupabaseServerClient();
-    const startOfDayISO = getPHStartOfDayISO();
-
-    const { data, error } = await supabase
+    
+    let query = supabase
       .from('sales')
       .select(`
         *,
@@ -397,8 +430,16 @@ export async function getTodaySales(): Promise<{ data: (Sale & { items: (SaleIte
         )
       `)
       .eq('user_id', user.id)
-      .gte('created_at', startOfDayISO)
       .order('created_at', { ascending: false });
+
+    if (dateStr) {
+      const range = getPHDateRangeISO(dateStr, dateStr);
+      query = query.gte('created_at', range.startISO).lte('created_at', range.endISO);
+    } else {
+      query = query.gte('created_at', getPHStartOfDayISO());
+    }
+
+    const { data, error } = await query;
 
     if (error) throw new Error(error.message);
     return { data: data as (Sale & { items: (SaleItem & { product: Product })[] })[], error: null };
@@ -422,6 +463,7 @@ export async function getTodaysSummary(): Promise<{ data: DailySummary | null; e
         items:sales_items ( quantity )
       `)
       .eq('user_id', user.id)
+      .eq('is_voided', false)
       .gte('created_at', startOfDayISO);
 
     if (error) throw new Error(error.message);

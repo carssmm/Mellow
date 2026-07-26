@@ -41,6 +41,7 @@ export async function getSalesAnalytics(
       .from('sales')
       .select('*')
       .eq('user_id', user.id)
+      .eq('is_voided', false)
       .gte('created_at', startISO)
       .lte('created_at', endISO)
       .order('created_at', { ascending: true });
@@ -99,10 +100,11 @@ export async function getTopSellingProducts(
         quantity,
         unit_price,
         created_at,
-        sale:sales!inner(user_id),
+        sale:sales!inner(user_id, is_voided),
         product:products!inner(id, name, category)
       `)
       .eq('sale.user_id', user.id)
+      .eq('sale.is_voided', false)
       .gte('created_at', startISO)
       .lte('created_at', endISO);
 
@@ -163,10 +165,11 @@ export async function getExportData(
         unit_price,
         unit_cost,
         created_at,
-        sale:sales!inner(user_id, payment_method, entry_mode),
+        sale:sales!inner(user_id, payment_method, entry_mode, is_voided),
         product:products!inner(name, category)
       `)
       .eq('sale.user_id', user.id)
+      .eq('sale.is_voided', false)
       .gte('created_at', startISO)
       .lte('created_at', endISO)
       .order('created_at', { ascending: false });

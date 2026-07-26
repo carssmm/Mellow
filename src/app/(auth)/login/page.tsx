@@ -60,11 +60,8 @@ export default function LoginPage() {
           <img
             src="/login.png"
             alt="Login Logo"
-            className="w-full max-w-[280px] md:max-w-[320px] h-auto object-contain mb-6 drop-shadow-md"
+            className="w-full max-w-[320px] md:max-w-[420px] h-auto object-contain mb-2 drop-shadow-md"
           />
-          <h1 className="text-headline-md font-headline-md text-primary-container text-center">
-            Owner Sign In
-          </h1>
         </div>
 
         {/* Form Section */}

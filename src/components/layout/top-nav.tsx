@@ -19,7 +19,7 @@ export function TopNav() {
             <img
               src="/header.png"
               alt="Mellow Logo"
-              className="h-12 w-auto max-h-12 object-contain py-1"
+              className="h-16 w-auto max-h-16 object-contain"
             />
           </Link>
         </div>
